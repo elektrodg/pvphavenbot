@@ -63,6 +63,8 @@ class Utility(commands.Cog):
                      value="`/ticket-setup /ticket-panel /ticket-close /ticket-claim /ticket-add /ticket-remove /ticket-transcript`", inline=False)
         em.add_field(name="🔗 Website linking",
                      value="`/link /unlink /mylink` — link Discord to your PvPHaven website account", inline=False)
+        em.add_field(name="🔍 Verification",
+                     value="`/screen /alts /vpncheck` — alt/VPN risk checks (staff)", inline=False)
         em.add_field(name="👋 Welcome",
                      value="`/setwelcome /setautorole /welcometest`", inline=False)
         await interaction.response.send_message(embed=em, ephemeral=True)
