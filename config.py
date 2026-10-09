@@ -25,6 +25,15 @@ def _bool(name: str, default: bool = True) -> bool:
     return val in ("1", "true", "yes", "on")
 
 
+def _int_list(name: str) -> list[int]:
+    out: list[int] = []
+    for part in os.getenv(name, "").split(","):
+        part = part.strip()
+        if part.isdigit():
+            out.append(int(part))
+    return out
+
+
 TOKEN: str = os.getenv("DISCORD_TOKEN", "")
 GUILD_ID: int | None = _int("GUILD_ID")
 PREFIX: str = os.getenv("PREFIX", "!")
@@ -37,8 +46,13 @@ MEMBERS_INTENT: bool = _bool("MEMBERS_INTENT", True)
 MESSAGE_CONTENT_INTENT: bool = _bool("MESSAGE_CONTENT_INTENT", True)
 
 TICKET_CATEGORY_ID: int | None = _int("TICKET_CATEGORY_ID")
-TICKET_STAFF_ROLE_ID: int | None = _int("TICKET_STAFF_ROLE_ID")
 TICKET_LOG_CHANNEL_ID: int | None = _int("TICKET_LOG_CHANNEL_ID")
+# All staff ranks that can see + handle tickets (comma-separated role IDs).
+# The old single TICKET_STAFF_ROLE_ID still works and is merged in.
+TICKET_STAFF_ROLE_ID: int | None = _int("TICKET_STAFF_ROLE_ID")
+TICKET_STAFF_ROLE_IDS: list[int] = list(dict.fromkeys(
+    _int_list("TICKET_STAFF_ROLE_IDS") + ([TICKET_STAFF_ROLE_ID] if TICKET_STAFF_ROLE_ID else [])
+))
 TICKET_PANEL_TITLE: str = os.getenv("TICKET_PANEL_TITLE", "PvPHaven Support")
 TICKET_PANEL_OPTIONS: str = os.getenv(
     "TICKET_PANEL_OPTIONS",

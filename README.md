@@ -37,7 +37,7 @@ python bot.py
 Get IDs: Discord Settings → Advanced → Developer Mode → right-click channel/role/category → Copy ID.
 
 - `TICKET_CATEGORY_ID` — category where ticket channels are created.
-- `TICKET_STAFF_ROLE_ID` — role pinged on new tickets, can claim/close.
+- `TICKET_STAFF_ROLE_IDS` — **all** staff ranks that can see/handle tickets, comma-separated role IDs (e.g. `111,222,333`). Every listed role gets view+send in each ticket and is pinged on creation. Anyone with Manage Messages / Admin also counts as staff.
 - `TICKET_LOG_CHANNEL_ID` — transcripts posted here on close.
 - `GUILD_ID` — set for instant slash sync while testing; remove later for global commands.
 

@@ -17,7 +17,7 @@ from config import (
     TICKET_LOG_CHANNEL_ID,
     TICKET_PANEL_OPTIONS,
     TICKET_PANEL_TITLE,
-    TICKET_STAFF_ROLE_ID,
+    TICKET_STAFF_ROLE_IDS,
 )
 from database.db import now
 
@@ -40,9 +40,14 @@ def parse_panel_options() -> list[tuple[str, str, str]]:
 def is_staff(member: discord.Member) -> bool:
     if member.guild_permissions.manage_messages or member.guild_permissions.administrator:
         return True
-    if TICKET_STAFF_ROLE_ID and any(r.id == TICKET_STAFF_ROLE_ID for r in member.roles):
+    if TICKET_STAFF_ROLE_IDS and any(r.id in TICKET_STAFF_ROLE_IDS for r in member.roles):
         return True
     return False
+
+
+def staff_roles(guild: discord.Guild) -> list[discord.Role]:
+    """All configured staff roles that exist in this guild."""
+    return [r for rid in TICKET_STAFF_ROLE_IDS if (r := guild.get_role(rid)) is not None]
 
 
 class TicketOpenButton(discord.ui.Button):
@@ -135,11 +140,9 @@ class Tickets(commands.Cog):
                                                          read_message_history=True, attach_files=True),
             guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True),
         }
-        if TICKET_STAFF_ROLE_ID:
-            role = guild.get_role(TICKET_STAFF_ROLE_ID)
-            if role:
-                overwrites[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True,
-                                                              read_message_history=True, manage_messages=True)
+        for role in staff_roles(guild):
+            overwrites[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True,
+                                                           read_message_history=True, manage_messages=True)
 
         name = f"ticket-{interaction.user.name[:20].lower().replace(' ', '-')}-{category[:10]}"
         channel = await guild.create_text_channel(
@@ -159,10 +162,9 @@ class Tickets(commands.Cog):
                                        f"Use the buttons below to claim, save a transcript, or close.",
                            color=0x2ECC71)
         await channel.send(embed=em, view=TicketControlView())
-        if TICKET_STAFF_ROLE_ID:
-            role = guild.get_role(TICKET_STAFF_ROLE_ID)
-            if role:
-                await channel.send(f"{role.mention} new ticket!")
+        roles = staff_roles(guild)
+        if roles:
+            await channel.send(f"{' '.join(r.mention for r in roles)} new ticket!")
         await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
     async def claim_ticket(self, interaction: discord.Interaction):
