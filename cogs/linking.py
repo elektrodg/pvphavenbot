@@ -130,11 +130,12 @@ class Linking(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def verify_setup(self, interaction: discord.Interaction, message: str = ""):
         em = discord.Embed(
-            title="✅ PvPHaven Verification",
+            title="🔗 Link Your Discord to PvPHaven",
             description=message or (
-                f"Link your Discord to your **pvphaven.cc** account to get verified.\n\n"
-                f"**How:**\n1. Press **Link Account** → you get a private code\n"
-                f"2. Enter it at {WEBSITE_URL} → profile → **Link Discord**\n\n"
+                f"Connect your Discord account to **pvphaven.cc** to get verified and unlock the server.\n\n"
+                f"**How to link:**\n1. Press **Link Account** below → you get a private code\n"
+                f"2. Go to {WEBSITE_URL} → profile → **Link Discord**\n"
+                f"3. Enter your code — you'll get the Verified role instantly\n\n"
                 f"Already linked? Press **Check Status**."),
             color=0x2ECC71)
         await interaction.response.send_message("Verify panel posted below 👇")
