@@ -58,6 +58,14 @@ It posts a persistent panel with two buttons — **Link Account** (sends the use
 private code as an ephemeral reply, no DM needed) and **Check Status** (shows their
 current link). Same flow as `/link`, just one click. Buttons survive restarts.
 
+**Verified role (automatic):** the moment the website confirms a link, the bot grants
+`VERIFIED_ROLE_ID` (yours: `1558095246473170945`) so members unlock all channels. You must:
+1. Set `VERIFIED_ROLE_ID=1558095246473170945` in the bot `.env` (already in `.env.example`).
+2. Server Settings → Roles → drag the **bot's role ABOVE the Verified role**, or Discord blocks the grant.
+3. Gate channels: each private channel/category → Permissions → `@everyone` deny **View Channel**, Verified role allow **View Channel**. Keep `#verify` itself visible to everyone.
+
+Already-linked members aren't updated retroactively — run **`/verifysync`** (admin) once to catch them up.
+
 **Bot side** (already built): `bot.py` hosts `GET /verify?code=..&site_user=..` with `X-API-Key` header.
 Test: `curl -H "X-API-Key: <LINK_API_KEY>" "http://localhost:8090/verify?code=ABC123&site_user=testuser"`
 

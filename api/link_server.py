@@ -18,8 +18,17 @@ from aiohttp import web
 
 import config
 from api.ipintel import check_ip
+from api.roles import grant_verified_role
 from config import DB_PATH, LINK_API_HOST, LINK_API_KEY, LINK_API_PORT
 from database.db import init_db, now
+
+# Set by bot.py so /verify can grant the Verified role. None in standalone mode.
+BOT = None
+
+
+def set_bot(bot) -> None:
+    global BOT
+    BOT = bot
 
 
 async def verify(request: web.Request) -> web.Response:
@@ -90,9 +99,13 @@ async def verify(request: web.Request) -> web.Response:
             "INSERT INTO link_history (guild_id, user_id, website_user, ip, vpn, created_at) VALUES (?,?,?,?,?,?)",
             (guild_id, user_id, website_user, ip, None if vpn is None else int(vpn), now()))
         await db.commit()
+
+    # Grant the Verified role now that ownership is proven.
+    role_granted = await grant_verified_role(BOT, guild_id, user_id) if BOT else False
     return web.json_response({"ok": True, "discord_id": str(user_id),
                               "guild_id": str(guild_id), "username": username,
-                              "vpn": vpn, "warnings": warnings})
+                              "vpn": vpn, "warnings": warnings,
+                              "role_granted": role_granted})
 
 
 async def lookup(request: web.Request) -> web.Response:

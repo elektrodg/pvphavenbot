@@ -76,6 +76,13 @@ BLOCK_VPN_LINKS: bool = _bool("BLOCK_VPN_LINKS", False)
 MIN_ACCOUNT_AGE_DAYS: int = int(os.getenv("MIN_ACCOUNT_AGE_DAYS", "7") or 7)
 SCREEN_ON_JOIN: bool = _bool("SCREEN_ON_JOIN", True)
 
+# --- Verification role ---
+# Granted automatically when a user links their website account.
+# YOUR verified role: 1558095246473170945
+# Discord-side setup: deny @everyone "View Channel" on gated channels/categories,
+# allow it for this role (see README). Bot role must sit ABOVE this role.
+VERIFIED_ROLE_ID: int | None = _int("VERIFIED_ROLE_ID")
+
 WELCOME_CHANNEL_ID: int | None = _int("WELCOME_CHANNEL_ID")
 AUTOROLE_ID: int | None = _int("AUTOROLE_ID")
 LOG_CHANNEL_ID: int | None = _int("LOG_CHANNEL_ID")

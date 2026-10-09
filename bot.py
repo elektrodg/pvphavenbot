@@ -9,7 +9,7 @@ from aiohttp import web
 from discord.ext import commands
 
 import config
-from api.link_server import build_app
+from api.link_server import build_app, set_bot
 from database.db import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -41,8 +41,9 @@ class PvPHavenBot(commands.Bot):
                 log.info("Loaded %s", ext)
             except Exception:
                 log.exception("Failed to load %s", ext)
-        # start link API alongside bot
+        # start link API alongside bot (bot ref lets /verify grant the Verified role)
         try:
+            set_bot(self)
             app = build_app()
             runner = web.AppRunner(app)
             await runner.setup()

@@ -101,6 +101,31 @@ class Linking(commands.Cog):
         except discord.Forbidden:
             await interaction.response.send_message(embed=em, ephemeral=True)
 
+    @app_commands.command(name="verifysync", description="Admin: grant Verified role to all linked members")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def verifysync(self, interaction: discord.Interaction):
+        from api.roles import grant_verified_role
+        from config import VERIFIED_ROLE_ID
+        if not VERIFIED_ROLE_ID:
+            await interaction.response.send_message(
+                "❌ `VERIFIED_ROLE_ID` is not set in `.env`.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT user_id FROM linked_accounts WHERE guild_id=?", (interaction.guild.id,))
+            user_ids = [r[0] for r in await cur.fetchall()]
+        granted, skipped = 0, 0
+        for uid in user_ids:
+            if await grant_verified_role(interaction.client, interaction.guild.id, uid):
+                granted += 1
+            else:
+                skipped += 1
+        await interaction.followup.send(
+            f"✅ Verified role granted to **{granted}** member(s)"
+            + (f" ({skipped} skipped — left the server or role missing)." if skipped else "."),
+            ephemeral=True)
+
     @app_commands.command(name="verify-setup", description="Post the verification panel in this channel (admin)")
     @app_commands.checks.has_permissions(administrator=True)
     async def verify_setup(self, interaction: discord.Interaction, message: str = ""):

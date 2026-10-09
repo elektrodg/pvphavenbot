@@ -50,5 +50,8 @@ export async function POST(req: Request) {
     username: data.username,
     vpn: data.vpn ?? null,
     warnings: data.warnings ?? [],
+    // true = bot granted the Verified role in Discord; false = member not
+    // found / role missing / not configured — staff can run /verifysync later.
+    roleGranted: data.role_granted ?? false,
   });
 }
