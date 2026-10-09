@@ -28,8 +28,8 @@ COGS = [
 class PvPHavenBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
-        intents.members = True
-        intents.message_content = True
+        intents.members = config.MEMBERS_INTENT
+        intents.message_content = config.MESSAGE_CONTENT_INTENT
         super().__init__(command_prefix=config.PREFIX, intents=intents)
 
     async def setup_hook(self):
@@ -72,8 +72,19 @@ async def main():
     if not config.TOKEN or config.TOKEN == "PASTE_BOT_TOKEN_HERE":
         raise SystemExit("Set DISCORD_TOKEN in .env first (see .env.example).")
     bot = PvPHavenBot()
-    async with bot:
-        await bot.start(config.TOKEN)
+    try:
+        async with bot:
+            await bot.start(config.TOKEN)
+    except discord.errors.PrivilegedIntentsRequired:
+        raise SystemExit(
+            "\n❌ Discord rejected the connection: privileged intents are not enabled.\n"
+            "Fix (2 min): https://discord.com/developers/applications -> your app -> Bot ->\n"
+            "  under 'Privileged Gateway Intents' enable:\n"
+            "    ✅ SERVER MEMBERS INTENT\n"
+            "    ✅ MESSAGE CONTENT INTENT\n"
+            "  -> Save Changes, then restart the bot.\n"
+            "(Or set MEMBERS_INTENT=false / MESSAGE_CONTENT_INTENT=false in .env as a last resort.)"
+        )
 
 
 if __name__ == "__main__":

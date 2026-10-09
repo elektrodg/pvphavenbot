@@ -18,9 +18,23 @@ def _int(name: str) -> int | None:
         return None
 
 
+def _bool(name: str, default: bool = True) -> bool:
+    val = os.getenv(name, "").strip().lower()
+    if not val:
+        return default
+    return val in ("1", "true", "yes", "on")
+
+
 TOKEN: str = os.getenv("DISCORD_TOKEN", "")
 GUILD_ID: int | None = _int("GUILD_ID")
 PREFIX: str = os.getenv("PREFIX", "!")
+
+# Privileged intents. These MUST also be enabled in the Discord Developer
+# Portal (application -> Bot -> Privileged Gateway Intents), otherwise
+# Discord rejects the connection with PrivilegedIntentsRequired.
+# Only disable as a last resort (welcome/autorole + member lookups degrade).
+MEMBERS_INTENT: bool = _bool("MEMBERS_INTENT", True)
+MESSAGE_CONTENT_INTENT: bool = _bool("MESSAGE_CONTENT_INTENT", True)
 
 TICKET_CATEGORY_ID: int | None = _int("TICKET_CATEGORY_ID")
 TICKET_STAFF_ROLE_ID: int | None = _int("TICKET_STAFF_ROLE_ID")
@@ -42,4 +56,4 @@ AUTOROLE_ID: int | None = _int("AUTOROLE_ID")
 LOG_CHANNEL_ID: int | None = _int("LOG_CHANNEL_ID")
 BOT_ACTIVITY: str = os.getenv("BOT_ACTIVITY", "PvPHaven | /help")
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "pvp_haven.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "pvp_haven.db")

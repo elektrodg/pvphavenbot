@@ -71,13 +71,36 @@ Optional reverse direction (site → Discord role): after linking, use the bot t
 
 ```bash
 # on VPS
-git clone <repo> && cd pvp_haven_bot
+git clone https://github.com/elektrodg/pvphavenbot && cd pvphavenbot
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env && nano .env
-# runpersistently:
-nohup python bot.py &
-# or systemd unit (Restart=always, WorkingDirectory=.../pvp_haven_bot, ExecStart=.../.venv/bin/python bot.py)
+# ALWAYS use the venv python with its full path (never bare `python`):
+./.venv/bin/python bot.py
+```
+
+Keep it running with systemd (recommended over nohup):
+
+```ini
+# /etc/systemd/system/pvphavenbot.service
+[Unit]
+Description=PvPHaven Discord Bot
+After=network.target
+
+[Service]
+User=tibo
+WorkingDirectory=/home/tibo/pvphavenbot
+ExecStart=/home/tibo/pvphavenbot/.venv/bin/python bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now pvphavenbot
+journalctl -u pvphavenbot -f   # live logs (replaces nohup.out)
 ```
 
 ## Project layout
@@ -94,6 +117,8 @@ pvp_haven_bot/
 
 ## Troubleshooting
 
+- **`PrivilegedIntentsRequired`**: Developer Portal → your app → **Bot** → enable **Server Members Intent** + **Message Content Intent** → Save → restart. (This is the #1 startup error.)
+- **`No module named 'discord'` / `python: No such file`**: venv not active — use `./.venv/bin/python bot.py`, not bare `python`.
 - **Commands don't appear**: wait ~1h for global sync, or set `GUILD_ID` for instant guild sync; re-invite with `applications.commands` scope.
 - **Missing permissions**: bot role must be ABOVE moderated/ticket roles; needs Manage Channels for tickets.
 - **DMs closed for /link**: bot falls back to ephemeral reply — still works.
