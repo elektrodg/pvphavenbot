@@ -12,7 +12,7 @@ Discord bot for **pvphaven.cc** (Growlocks): moderation, utility, fun, giveaways
 | 🎉 Fun | `/8ball /coinflip /dice /rps /joke` |
 | 🎁 Giveaway | `/gstart /gend /greroll` (auto-ends, 🎉 reactions) |
 | 🎫 Tickets | `/ticket-setup /ticket-panel /ticket-close /ticket-claim /ticket-add /ticket-remove /ticket-transcript` + button panel + HTML transcripts |
-| 🔗 Linking | `/link /mylink /unlink /linkcheck` + bot API (`/verify`, `/user/{id}`, `/health`) |
+| 🔗 Linking | `/link /mylink /unlink /linkcheck /verify-setup` + verify panel + bot API (`/verify`, `/user/{id}`, `/health`) |
 | 🔍 Verification | `/screen /alts /vpncheck` + join screening + VPN/multi-account flags on `/verify` |
 | 👋 Welcome | `/setwelcome /setautorole /welcometest` + join messages |
 
@@ -52,6 +52,11 @@ Get IDs: Discord Settings → Advanced → Developer Mode → right-click channe
 ## 4. Website linking (pvphaven.cc ↔ Discord)
 
 Flow: Discord `/link` → 6-char code (10 min TTL) → user enters code on site → site calls bot API → linked.
+
+**Verify panel (recommended):** in your `#verify` channel run `/verify-setup` (admin).
+It posts a persistent panel with two buttons — **Link Account** (sends the user their
+private code as an ephemeral reply, no DM needed) and **Check Status** (shows their
+current link). Same flow as `/link`, just one click. Buttons survive restarts.
 
 **Bot side** (already built): `bot.py` hosts `GET /verify?code=..&site_user=..` with `X-API-Key` header.
 Test: `curl -H "X-API-Key: <LINK_API_KEY>" "http://localhost:8090/verify?code=ABC123&site_user=testuser"`
