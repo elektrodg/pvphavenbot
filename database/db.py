@@ -68,6 +68,21 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     autorole INTEGER,
     log_channel INTEGER
 );
+CREATE TABLE IF NOT EXISTS link_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    website_user TEXT NOT NULL DEFAULT '',
+    ip TEXT NOT NULL DEFAULT '',
+    vpn INTEGER,
+    created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ip_intel_cache (
+    ip TEXT PRIMARY KEY,
+    vpn INTEGER NOT NULL,
+    provider TEXT NOT NULL DEFAULT '',
+    checked_at INTEGER NOT NULL
+);
 """
 
 

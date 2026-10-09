@@ -22,6 +22,7 @@ COGS = [
     "cogs.tickets",
     "cogs.linking",
     "cogs.welcome",
+    "cogs.verification",
 ]
 
 

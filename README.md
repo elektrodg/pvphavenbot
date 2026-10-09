@@ -13,6 +13,7 @@ Discord bot for **pvphaven.cc** (Growlocks): moderation, utility, fun, giveaways
 | 🎁 Giveaway | `/gstart /gend /greroll` (auto-ends, 🎉 reactions) |
 | 🎫 Tickets | `/ticket-setup /ticket-panel /ticket-close /ticket-claim /ticket-add /ticket-remove /ticket-transcript` + button panel + HTML transcripts |
 | 🔗 Linking | `/link /mylink /unlink /linkcheck` + bot API (`/verify`, `/user/{id}`, `/health`) |
+| 🔍 Verification | `/screen /alts /vpncheck` + join screening + VPN/multi-account flags on `/verify` |
 | 👋 Welcome | `/setwelcome /setautorole /welcometest` + join messages |
 
 ## 1. Create the bot (Discord Developer Portal)
@@ -67,7 +68,27 @@ Test: `curl -H "X-API-Key: <LINK_API_KEY>" "http://localhost:8090/verify?code=AB
 
 Optional reverse direction (site → Discord role): after linking, use the bot token server-side with discord.py/discord API to add a "Linked" role — ask if you want this snippet.
 
-## 5. Deploy (VPS example)
+## 5. Anti-alt & VPN verification
+
+The bot screens for multi-accounts and VPN/proxy use in two places:
+
+**A. At link time (automatic).** The Next.js route forwards the user's IP to `GET /verify?...&ip=...`. The bot then:
+1. Checks the IP for VPN/proxy (if `VPN_CHECK_PROVIDER` is enabled — `proxycheck` has a free tier, key optional; `ipqualityscore` needs a key). Results cached 7 days.
+2. Flags duplicates: Discord previously linked to another site account, site account linked to other Discord(s), IP already used by other accounts.
+3. Returns `warnings: [...]` + `vpn: true/false/null` to the website — store these and e.g. require staff review on `vpn_detected` / `shared_ip_*`.
+4. If `BLOCK_VPN_LINKS=true`, VPN users are rejected outright (code stays valid for retry without VPN). Default `false` = flag-only.
+
+Every link is logged to `link_history` (site user + IP + vpn flag), which powers the Discord commands below. Note: IPs are personal data — the SQLite DB lives on your VPS; don't export it.
+
+**B. In Discord (staff commands).**
+- `/screen @member` — risk score (LOW/MEDIUM/HIGH) from account age, default avatar, multi-linked site accounts, VPN links, shared IPs.
+- `/alts <member | site name | IP>` — find all accounts tied to the same Discord, site user, or IP.
+- `/vpncheck <ip>` — live VPN/proxy lookup.
+- Join screening (`SCREEN_ON_JOIN=true`, threshold `MIN_ACCOUNT_AGE_DAYS=7`): fresh or avatar-less joins get flagged to the log channel with a `/screen` hint.
+
+Enable on VPS: set `VPN_CHECK_PROVIDER=proxycheck` in `.env`, restart. `/screen` and `/alts` work immediately from link history even with checks off.
+
+## 6. Deploy (VPS example)
 
 ```bash
 # on VPS

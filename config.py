@@ -65,6 +65,17 @@ LINK_API_HOST: str = os.getenv("LINK_API_HOST", "0.0.0.0")
 LINK_API_PORT: int = int(os.getenv("LINK_API_PORT", "8090") or 8090)
 LINK_CODE_TTL_MINUTES: int = int(os.getenv("LINK_CODE_TTL_MINUTES", "10") or 10)
 
+# --- Anti-alt / VPN verification ---
+# Website forwards the user's IP on /verify; bot checks VPN/proxy + flags
+# duplicate accounts. Flag-only by default; set BLOCK_VPN_LINKS=true to reject.
+VPN_CHECK_PROVIDER: str = os.getenv("VPN_CHECK_PROVIDER", "off").strip().lower()  # off | proxycheck | ipqualityscore
+PROXYCHECK_KEY: str = os.getenv("PROXYCHECK_KEY", "")
+IPQUALITYSCORE_KEY: str = os.getenv("IPQUALITYSCORE_KEY", "")
+BLOCK_VPN_LINKS: bool = _bool("BLOCK_VPN_LINKS", False)
+# Join screening: flag accounts younger than this (days) to the log channel.
+MIN_ACCOUNT_AGE_DAYS: int = int(os.getenv("MIN_ACCOUNT_AGE_DAYS", "7") or 7)
+SCREEN_ON_JOIN: bool = _bool("SCREEN_ON_JOIN", True)
+
 WELCOME_CHANNEL_ID: int | None = _int("WELCOME_CHANNEL_ID")
 AUTOROLE_ID: int | None = _int("AUTOROLE_ID")
 LOG_CHANNEL_ID: int | None = _int("LOG_CHANNEL_ID")
