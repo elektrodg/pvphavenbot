@@ -1,26 +1,6 @@
 """Built-in link-verification HTTP API (aiohttp, no extra web framework).
 
 Website (pvphaven.cc, Next.js) calls:
-    GET /verify?code=ABC123   Header: X-API-Key: <LINK_API_KEY>
-    GET /user/123456789       Header: X-API-Key  -> linked website_user
-
-Run standalone:  python -m api.link_server
-Or auto-started by bot.py alongside the bot.
-"""
-from __future__ import annotations
-
-import json
-
-import aiosqlite
-from aiohttp import web
-
-from config import DB_PATH, LINK_API_HOST, LINK_API_KEY, LINK_API_PORT
-from database.db import init_db, now
-
-
-"""Built-in link-verification HTTP API (aiohttp, no extra web framework).
-
-Website (pvphaven.cc, Next.js) calls:
     GET /verify?code=ABC123&site_user=<id>&ip=<user ip>   Header: X-API-Key: <LINK_API_KEY>
     GET /user/123456789       Header: X-API-Key  -> linked website_user
 
