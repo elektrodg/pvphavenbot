@@ -44,14 +44,13 @@ export async function POST(req: Request) {
   // await prisma.user.update({ where: { id: siteUserId }, data: { discordId: data.discord_id } });
   // TODO: handle data.warnings, e.g.:
   // if (data.warnings?.length) await prisma.verificationFlag.createMany(...)
+  // The Verified role is granted when the user presses Verify in the
+  // Discord panel (bot re-checks VPN + multi-accounts first), not here.
   return Response.json({
     ok: true,
     discordId: data.discord_id,
     username: data.username,
     vpn: data.vpn ?? null,
     warnings: data.warnings ?? [],
-    // true = bot granted the Verified role in Discord; false = member not
-    // found / role missing / not configured — staff can run /verifysync later.
-    roleGranted: data.role_granted ?? false,
   });
 }

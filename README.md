@@ -58,8 +58,15 @@ It posts a persistent panel with two buttons — **Link Account** (sends the use
 private code as an ephemeral reply, no DM needed) and **Check Status** (shows their
 current link). Same flow as `/link`, just one click. Buttons survive restarts.
 
-**Verified role (automatic):** the moment the website confirms a link, the bot grants
-`VERIFIED_ROLE_ID` (yours: `1558095246473170945`) so members unlock all channels. You must:
+**Verified role (via the Verify button):** linking alone does NOT grant the role.
+When the user presses **Verify** in the panel, the bot re-checks their stored link data:
+1. Link fresher than 30 days (stale IPs can't be trusted — otherwise they re-link),
+2. No multi-accounts (Discord ↔ site ↔ IP must all be 1-to-1),
+3. No VPN/proxy on their link IPs (requires `VPN_CHECK_PROVIDER=proxycheck` in `.env`).
+
+Clear on all three = Verified role (`1558095246473170945`) instantly. Anything flagged =
+red deny message telling them exactly why (re-link without VPN, or open a ticket for manual review).
+Discord-side setup (unchanged):
 1. Set `VERIFIED_ROLE_ID=1558095246473170945` in the bot `.env` (already in `.env.example`).
 2. Server Settings → Roles → drag the **bot's role ABOVE the Verified role**, or Discord blocks the grant.
 3. Gate channels: each private channel/category → Permissions → `@everyone` deny **View Channel**, Verified role allow **View Channel**. Keep `#verify` itself visible to everyone.

@@ -21,8 +21,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import config
+from api.ipintel import check_ip
+from api.roles import grant_verified_role
 from config import DB_PATH, LINK_CODE_TTL_MINUTES, WEBSITE_URL
 from database.db import now
+
+# Links older than this must be refreshed (Link Account again) before Verify,
+# otherwise the stored IP data is too stale to trust.
+VERIFY_LINK_MAX_AGE_DAYS = 30
 
 
 def make_code() -> str:
@@ -57,7 +64,7 @@ def link_embed(code: str, expires: int) -> discord.Embed:
 
 
 class VerifyPanelView(discord.ui.View):
-    """Persistent panel for a #verify channel: Link Account + Check Status."""
+    """Persistent panel for a #verify channel: Link Account + Verify + Check Status."""
 
     def __init__(self):
         super().__init__(timeout=None)
@@ -68,6 +75,91 @@ class VerifyPanelView(discord.ui.View):
         await interaction.response.defer(ephemeral=True, thinking=True)
         code, expires = await create_link_code(interaction.guild.id, interaction.user)  # type: ignore
         await interaction.followup.send(embed=link_embed(code, expires), ephemeral=True)
+
+    @discord.ui.button(label="Verify", emoji="🛡️", style=discord.ButtonStyle.primary,
+                       custom_id="pvp_verify:verify")
+    async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """VPN + multi-account checks; grants Verified role when clear."""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        gid = interaction.guild.id  # type: ignore
+        uid = interaction.user.id
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(
+                "SELECT website_user, linked_at FROM linked_accounts WHERE guild_id=? AND user_id=?",
+                (gid, uid))
+            row = await cur.fetchone()
+            if not row or not row[0]:
+                await interaction.followup.send(
+                    f"❌ **Link your account first:** press **Link Account**, enter the code at {WEBSITE_URL}, then press **Verify**.",
+                    ephemeral=True)
+                return
+            site_user, linked_at = row
+            cur = await db.execute(
+                "SELECT DISTINCT website_user FROM link_history WHERE guild_id=? AND user_id=? AND website_user<>''",
+                (gid, uid))
+            site_users = [r[0] for r in await cur.fetchall()]
+            cur = await db.execute(
+                "SELECT DISTINCT ip FROM link_history WHERE guild_id=? AND user_id=? AND ip<>''",
+                (gid, uid))
+            ips = [r[0] for r in await cur.fetchall()]
+            cur = await db.execute(
+                "SELECT user_id FROM linked_accounts WHERE website_user=? AND NOT (guild_id=? AND user_id=?)",
+                (site_user, gid, uid))
+            other_discords = [r[0] for r in await cur.fetchall()]
+            shared: list[str] = []
+            for ip in ips:
+                cur = await db.execute(
+                    "SELECT DISTINCT website_user FROM link_history "
+                    "WHERE ip=? AND website_user<>'' AND website_user<>? LIMIT 5",
+                    (ip, site_user))
+                shared.extend(r[0] for r in await cur.fetchall())
+
+        problems: list[str] = []
+        # 1. Freshness — stale IPs can't be trusted.
+        if linked_at < now() - VERIFY_LINK_MAX_AGE_DAYS * 86400:
+            problems.append(f"Your link is older than {VERIFY_LINK_MAX_AGE_DAYS} days. "
+                            f"Press **Link Account**, enter the fresh code at {WEBSITE_URL}, then **Verify** again.")
+        # 2. Multi-accounts.
+        if len(site_users) > 1:
+            problems.append("This Discord is linked to multiple website accounts. Staff must review — open a ticket.")
+        if other_discords:
+            problems.append("Your website account is linked to other Discord accounts. Staff must review — open a ticket.")
+        if shared:
+            problems.append("Your network is already used by another account. If this is a mistake (shared Wi-Fi etc.), open a ticket.")
+        # 3. VPN/proxy on the stored link IPs (always evaluated, reported with the rest).
+        if config.VPN_CHECK_PROVIDER == "off":
+            problems.append("VPN verification is not enabled on the bot yet — contact staff.")
+        elif not ips:
+            problems.append("No network data stored — press **Link Account**, enter the code on the site, then **Verify**.")
+        else:
+            vpn_hit, unknown = False, False
+            for ip in ips:
+                res = await check_ip(ip, config.VPN_CHECK_PROVIDER,
+                                     config.PROXYCHECK_KEY, config.IPQUALITYSCORE_KEY)
+                if res is True:
+                    vpn_hit = True
+                elif res is None:
+                    unknown = True
+            if vpn_hit:
+                problems.append("VPN/proxy detected on your network. Disable it, press **Link Account** to refresh, then **Verify** again.")
+            elif unknown:
+                problems.append("VPN status could not be confirmed — try again in a few minutes or contact staff.")
+
+        if problems:
+            em = discord.Embed(title="🔴 Verification failed", color=0xE74C3C,
+                               description="\n".join(f"• {p}" for p in problems))
+            await interaction.followup.send(embed=em, ephemeral=True)
+            return
+        ok = await grant_verified_role(interaction.client, gid, uid)
+        if ok:
+            await interaction.followup.send(
+                "✅ **Verified!** VPN and multi-account checks are clear — welcome to PvPHaven. 🏝️",
+                ephemeral=True)
+        else:
+            await interaction.followup.send(
+                "✅ Checks passed, but the Verified role could not be granted. "
+                "Staff: check `VERIFIED_ROLE_ID` and that the bot role sits above it.",
+                ephemeral=True)
 
     @discord.ui.button(label="Check Status", emoji="✅", style=discord.ButtonStyle.secondary,
                        custom_id="pvp_verify:status")
@@ -130,13 +222,13 @@ class Linking(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def verify_setup(self, interaction: discord.Interaction, message: str = ""):
         em = discord.Embed(
-            title="🔗 Link Your Discord to PvPHaven",
+            title="✅ PvPHaven Verification",
             description=message or (
-                f"Connect your Discord account to **pvphaven.cc** to get verified and unlock the server.\n\n"
-                f"**How to link:**\n1. Press **Link Account** below → you get a private code\n"
-                f"2. Go to {WEBSITE_URL} → profile → **Link Discord**\n"
-                f"3. Enter your code — you'll get the Verified role instantly\n\n"
-                f"Already linked? Press **Check Status**."),
+                f"Verify yourself to unlock the server. We check for VPN/proxy use and multi-accounts.\n\n"
+                f"**Steps:**\n1. Press **Link Account** → you get a private code\n"
+                f"2. Enter it at {WEBSITE_URL} → profile → **Link Discord**\n"
+                f"3. Press **Verify** → clear checks = Verified role instantly\n\n"
+                f"Already linked? Press **Verify** (or **Check Status** to see your link)."),
             color=0x2ECC71)
         await interaction.response.send_message("Verify panel posted below 👇")
         await interaction.channel.send(embed=em, view=VerifyPanelView())
